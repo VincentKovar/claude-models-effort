@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model and effort grid</title>
+<style>
+:root{--surface-1:#f4f3ee;--surface-2:#ffffff;--text-primary:#1f1f1d;--text-secondary:#5f5e5a;--text-muted:#8a8982;--border:rgba(0,0,0,.12);--border-strong:rgba(0,0,0,.3);--bg-danger:#fcebeb;--border-danger:#e24b4a;--text-danger:#791f1f;--bg-warning:#faeeda;--border-warning:#ba7517;--text-warning:#633806;--bg-success:#eaf3de;--border-success:#639922;--text-success:#27500a;--border-accent:#378add;--radius:8px}
+@media (prefers-color-scheme:dark){:root{--surface-1:#2a2a28;--surface-2:#1f1f1d;--text-primary:#f1efe8;--text-secondary:#b4b2a9;--text-muted:#888780;--border:rgba(255,255,255,.14);--border-strong:rgba(255,255,255,.3);--bg-danger:#501313;--border-danger:#e24b4a;--text-danger:#f7c1c1;--bg-warning:#412402;--border-warning:#ba7517;--text-warning:#faeeda;--bg-success:#173404;--border-success:#639922;--text-success:#c0dd97;--border-accent:#85b7eb}}
+body{margin:0;padding:24px 16px;background:var(--surface-2);color:var(--text-primary);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.6}
+main{max-width:680px;margin:0 auto}
+h1{font-size:22px;font-weight:500;margin:0 0 6px}
+p.lead{color:var(--text-secondary);font-size:15px;margin:0 0 20px}
+button{font:inherit;cursor:pointer}
+input[type=range]{accent-color:var(--border-accent)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<main>
+<h1>Model and effort: two separate dials</h1>
+<p class="lead">The model decides which brain answers. Effort decides how hard that brain works on one request. Slide the difficulty, then click any cell.</p>
+<h2 class="sr-only">Interactive grid showing how model tier and effort level combine for tasks of different difficulty</h2>
+<div style="display:flex;align-items:center;gap:12px;margin:0 0 6px;">
+<label for="diff" style="font-size:14px;color:var(--text-secondary);white-space:nowrap;">Task difficulty</label>
+<input type="range" id="diff" min="1" max="5" step="1" value="3" style="flex:1;">
+</div>
+<div id="diffLabel" style="font-size:14px;font-weight:500;margin:0 0 14px;"></div>
+<div id="grid" style="display:grid;grid-template-columns:76px repeat(5,minmax(0,1fr));gap:6px;"></div>
+<div style="display:flex;flex-wrap:wrap;gap:14px;margin:14px 0 4px;font-size:12px;color:var(--text-secondary);">
+<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--bg-danger);border:0.5px solid var(--border-danger);margin-right:5px;"></span>Likely falls short</span>
+<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--bg-warning);border:0.5px solid var(--border-warning);margin-right:5px;"></span>Borderline</span>
+<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--bg-success);border:0.5px solid var(--border-success);margin-right:5px;"></span>Good fit</span>
+<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--surface-1);border:0.5px solid var(--border);margin-right:5px;"></span>Overkill</span>
+<span>Thick outline = cheapest good fit</span>
+</div>
+<div id="detail" style="margin-top:12px;background:var(--surface-1);border-radius:var(--radius);padding:12px 14px;font-size:14px;line-height:1.6;min-height:96px;"></div>
+<div style="font-size:12px;color:var(--text-muted);margin-top:8px;">An illustration of the concept, not benchmark data. Spend is a rough relative scale.</div>
+</main>
+<script>
+var models=[
+{n:'Haiku',p:1,c:1,d:'The fastest and lightest tier, built for simple, high-volume work.'},
+{n:'Sonnet',p:2,c:3,d:'The balanced everyday tier for most drafting, analysis, and coding.'},
+{n:'Opus',p:3,c:5,d:'A deeper reasoning tier for complex, multi-part problems.'},
+{n:'Fable',p:4,c:8,d:'The most capable tier, for the hardest and most open-ended work.'}];
+var efforts=[
+{n:'Low',b:0,m:1,d:'Answers quickly and often skips deliberate thinking on simple requests.'},
+{n:'Medium',b:0.6,m:2,d:'Moderate thinking, and it may still skip thinking when the task is simple.'},
+{n:'High',b:1.1,m:3.5,d:'The usual default. Claude almost always thinks before answering.'},
+{n:'Xhigh',b:1.4,m:5,d:'Extended exploration, aimed at long or demanding work.'},
+{n:'Max',b:1.55,m:7,d:'No holding back on thinking. Gains over xhigh are usually small.'}];
+var tasks=['Quick and routine, like a subject line or a reformat','Everyday drafting, like a marketing email or a summary','Nuanced work, like tightening a scene or a positioning memo','Complex and multi-step, like a game economy or a strategy plan','The hardest tier, like a sprawling analysis with many moving parts'];
+var need=[1.3,2.3,3.3,4.3,5.3];
+var sel=null;
+function status(diff){return diff<-0.8?0:diff<0?1:diff<=1.1?2:3;}
+var names=['Likely falls short','Borderline','Good fit','Overkill'];
+var short=['Falls short','Borderline','Good fit','Overkill'];
+var sty=[['var(--bg-danger)','var(--border-danger)','var(--text-danger)'],['var(--bg-warning)','var(--border-warning)','var(--text-warning)'],['var(--bg-success)','var(--border-success)','var(--text-success)'],['var(--surface-1)','var(--border)','var(--text-muted)']];
+function render(){
+var lvl=+document.getElementById('diff').value-1;
+document.getElementById('diffLabel').textContent=tasks[lvl];
+var best=null,bestCost=1e9;
+models.forEach(function(m,i){efforts.forEach(function(e,j){
+var diff=m.p+e.b-need[lvl];
+if(diff>=0){var cost=m.c*e.m;if(cost<bestCost){bestCost=cost;best=[i,j];}}
+});});
+var g=document.getElementById('grid');g.innerHTML='';
+g.appendChild(document.createElement('div'));
+efforts.forEach(function(e){var h=document.createElement('div');h.textContent=e.n;h.style.cssText='font-size:12px;color:var(--text-secondary);text-align:center;padding-bottom:2px;';g.appendChild(h);});
+models.forEach(function(m,i){
+var lab=document.createElement('div');lab.textContent=m.n;lab.style.cssText='font-size:14px;font-weight:500;display:flex;align-items:center;';g.appendChild(lab);
+efforts.forEach(function(e,j){
+var s=status(m.p+e.b-need[lvl]);
+var b=document.createElement('button');
+var isBest=best&&best[0]==i&&best[1]==j;
+b.textContent=short[s];
+b.style.cssText='height:52px;padding:0 2px;font-size:12px;background:'+sty[s][0]+';color:'+sty[s][2]+';border:'+(isBest?'2.5px solid '+sty[s][2]:'0.5px solid '+sty[s][1])+';border-radius:var(--radius);';
+if(sel&&sel[0]==i&&sel[1]==j){b.style.boxShadow='0 0 0 2px var(--border-accent)';}
+b.onclick=function(){sel=[i,j];render();};
+g.appendChild(b);
+});});
+var d=document.getElementById('detail');
+if(!sel){d.innerHTML='<span style="color:var(--text-secondary);">Click any cell. Notice how a smaller model with higher effort can match a bigger model with lower effort.</span>';}
+else{
+var m=models[sel[0]],e=efforts[sel[1]];
+var s=status(m.p+e.b-need[lvl]);
+var spend=Math.round(m.c*e.m);
+d.innerHTML='<div style="font-weight:500;margin-bottom:4px;">'+m.n+' at '+e.n.toLowerCase()+' effort: '+names[s].toLowerCase()+'</div><div><span style="color:var(--text-secondary);">The model:</span> '+m.d+'</div><div><span style="color:var(--text-secondary);">The effort:</span> '+e.d+'</div><div style="margin-top:4px;color:var(--text-secondary);">Relative spend: about '+spend+' units (the cheapest cell is 1).</div>';
+}
+}
+document.getElementById('diff').oninput=render;
+render();
+</script>
+</body>
+</html>

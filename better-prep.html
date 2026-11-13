@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bigger model, or better brief?</title>
+<meta name="description" content="An interactive look at how model size, thinking effort, and your own preparation trade off against each other.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --chalk:#E9EEF3;
+  --panel:#F7F9FB;
+  --ink:#16233A;
+  --ink-soft:#4A5A75;
+  --rule:#C5D0DE;
+  --cobalt:#2747D6;
+  --cobalt-wash:#CFD9FA;
+  --cobalt-edge:#9FB0F0;
+  --saffron:#F2B632;
+  --font:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--chalk);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.55;font-optical-sizing:auto}
+.page{max-width:1000px;margin:0 auto;padding:56px 24px 48px}
+h1{font-size:clamp(2.5rem,7vw,4.5rem);line-height:1;font-weight:760;font-variation-settings:"wdth" 78;letter-spacing:-0.015em;margin:0 0 20px;max-width:12ch}
+.intro{font-size:1.15rem;max-width:54ch;margin:0 0 36px;color:var(--ink-soft)}
+.tool{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:28px}
+.pick{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;padding-bottom:24px;border-bottom:1px solid var(--rule);margin-bottom:28px}
+.pick label{font-weight:600}
+.pick select{font:inherit;font-size:1.1rem;font-weight:600;color:var(--ink);background:var(--chalk);border:1px solid var(--rule);border-radius:4px;padding:8px 12px;min-width:min(100%,320px);cursor:pointer}
+.main{display:grid;grid-template-columns:230px minmax(0,1fr);gap:40px;align-items:start}
+h2{font-size:1rem;font-weight:700;margin:0 0 14px}
+.rail{list-style:none;margin:0;padding:0;position:relative}
+.rail::before{content:"";position:absolute;left:11px;top:14px;bottom:14px;width:2px;background:var(--rule)}
+.rail li{position:relative}
+.rung{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;padding:9px 0;cursor:pointer;font-size:0.95rem;color:var(--ink-soft);position:relative;z-index:1}
+.rung .node{flex:none;width:24px;height:24px;border-radius:50%;background:var(--panel);border:2px solid var(--rule);transition:background .2s,border-color .2s,box-shadow .2s}
+.rung.done .node{background:var(--cobalt);border-color:var(--cobalt)}
+.rung.now{color:var(--ink);font-weight:700}
+.rung.now .node{background:var(--cobalt);border-color:var(--cobalt);box-shadow:0 0 0 4px var(--cobalt-wash)}
+.rung:hover .node{border-color:var(--cobalt)}
+.rung:focus-visible{outline:3px solid var(--saffron);outline-offset:3px;border-radius:4px}
+.rung-note{margin:18px 0 0;font-size:0.95rem}
+.rung-note strong{display:block;margin-bottom:2px}
+.rung-note .heads{display:block;margin-top:8px;color:var(--ink-soft)}
+.board-cap{margin:0 0 12px;font-size:0.95rem;color:var(--ink-soft)}
+.board{position:relative}
+.grid{display:grid;grid-template-columns:56px repeat(5,minmax(0,1fr));gap:6px}
+.colhead{font-size:0.8rem;font-weight:600;color:var(--ink-soft);text-align:center;padding-bottom:2px}
+.rowhead{font-weight:700;display:flex;align-items:center;font-size:0.95rem}
+.cell{min-height:54px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:0.8rem;font-weight:600;line-height:1.2;border-radius:4px;padding:2px 3px;transition:background-color .25s,color .25s}
+.s0{background:repeating-linear-gradient(135deg,transparent 0 5px,rgba(22,35,58,.13) 5px 6px),#E1E8F0;color:var(--ink-soft)}
+.s1{background:var(--cobalt-wash);color:#1B2F8F;border:1px solid var(--cobalt-edge)}
+.s2{background:var(--cobalt);color:#fff}
+.s3{background:transparent;color:#5C6C86;border:1px dashed #A9B6C9;font-weight:500}
+.marker{position:absolute;left:0;top:0;border:4px solid var(--saffron);border-radius:8px;pointer-events:none;transition:transform .4s cubic-bezier(.2,.8,.2,1),width .4s,height .4s,opacity .2s}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin:16px 0 0;padding:0;list-style:none;font-size:0.82rem;color:var(--ink-soft)}
+.legend li{display:flex;align-items:center;gap:7px}
+.sw{width:16px;height:16px;border-radius:3px;flex:none}
+.sw.ring{background:transparent;border:3px solid var(--saffron);border-radius:5px}
+.result{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px 40px;margin-top:32px;padding-top:28px;border-top:1px solid var(--rule)}
+.story{font-size:clamp(1.25rem,2.6vw,1.65rem);line-height:1.25;font-weight:620;font-variation-settings:"wdth" 88;margin:0;max-width:30ch}
+.facts{display:grid;gap:18px}
+.fact dt{font-size:0.85rem;color:var(--ink-soft);margin:0 0 2px}
+.fact dd{margin:0;font-size:1.35rem;font-weight:700;font-variation-settings:"wdth" 88}
+.bars{display:grid;gap:7px;margin-top:6px}
+.barrow{display:grid;grid-template-columns:118px minmax(0,1fr);gap:10px;align-items:center;font-size:0.82rem;color:var(--ink-soft)}
+.track{height:12px;background:var(--chalk);border-radius:2px;overflow:hidden}
+.fill{height:100%;background:#8EA0BA;transition:width .4s cubic-bezier(.2,.8,.2,1)}
+.fill.now{background:var(--cobalt)}
+.foot{margin:28px 0 0;font-size:0.88rem;color:var(--ink-soft);max-width:70ch}
+.foot a{color:var(--cobalt);font-weight:600}
+.foot a:focus-visible,.pick select:focus-visible{outline:3px solid var(--saffron);outline-offset:2px}
+@media (max-width:760px){
+  .page{padding:36px 16px 36px}
+  .tool{padding:18px}
+  .main{grid-template-columns:1fr;gap:28px}
+  .result{grid-template-columns:1fr}
+  .grid{grid-template-columns:60px repeat(5,minmax(0,1fr));gap:4px}
+  .cell{min-height:50px}
+  .cell .lab{display:none}
+  .colhead{font-size:0.7rem}
+  .rowhead{font-size:0.88rem}
+}
+@media (prefers-reduced-motion:reduce){
+  .marker,.fill,.cell,.rung .node{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Bigger model, or better brief?</h1>
+  <p class="intro">A stronger AI model is one way to get a better result. Careful preparation is the other. Choose a work task, then climb the ladder to see what changes.</p>
+
+  <div class="tool">
+    <div class="pick">
+      <label for="task">Choose a work task</label>
+      <select id="task"></select>
+    </div>
+
+    <div class="main">
+      <section aria-labelledby="ladder-h">
+        <h2 id="ladder-h">How much you prepare</h2>
+        <ul class="rail" id="ladder"></ul>
+        <p class="rung-note" id="rungNote"></p>
+      </section>
+
+      <section aria-labelledby="board-h">
+        <h2 id="board-h">Which model and effort fits</h2>
+        <p class="board-cap">Rows are the model. Columns are how hard it thinks.</p>
+        <div class="board" id="board">
+          <div class="grid" id="grid" role="table" aria-label="Fit of each model and effort level for the chosen task"></div>
+          <div class="marker" id="marker" aria-hidden="true"></div>
+        </div>
+        <ul class="legend">
+          <li><span class="sw s0"></span>Falls short</li>
+          <li><span class="sw s1"></span>Borderline</li>
+          <li><span class="sw s2"></span>Good fit</li>
+          <li><span class="sw s3"></span>Overkill</li>
+          <li><span class="sw ring"></span>Cheapest good fit</li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="result">
+      <p class="story" id="story" aria-live="polite"></p>
+      <dl class="facts">
+        <div class="fact"><dt>Cheapest good fit</dt><dd id="fitOut"></dd></div>
+        <div class="fact"><dt>Your preparation time</dt><dd id="timeOut"></dd></div>
+        <div class="fact"><dt>Model spend</dt>
+          <dd><div class="bars" id="bars"></div></dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <p class="foot">An educational illustration, not a measurement. Spend and time are rough, relative guesses. Built by Vincent Kovar. Want the simpler version? Try the <a href="index.html">model and effort grid</a> on its own.</p>
+</div>
+
+<script>
+var models=[{n:'Haiku',p:1,c:1},{n:'Sonnet',p:2,c:3},{n:'Opus',p:3,c:5},{n:'Fable',p:4,c:8}];
+var efforts=[{n:'Low',b:0,m:1},{n:'Medium',b:0.6,m:2},{n:'High',b:1.1,m:3.5},{n:'Xhigh',b:1.4,m:5},{n:'Max',b:1.55,m:7}];
+var tasks=[
+{n:'Rename files or reformat a list',need:1.3,gain:0.9,assets:'A sample of the messy input and the format you want back.'},
+{n:'Tailored sales outreach email',need:2.3,gain:1.0,assets:'The prospect profile, your best past email, and your offer in two lines.'},
+{n:'Marketing calculator',need:3.0,gain:0.9,assets:'The formulas written out, sample inputs, and the exact outputs you expect.'},
+{n:'Competitor analysis',need:3.3,gain:0.9,assets:'Competitor pages and reports you gathered, plus the framework you want used.'},
+{n:'Tighten a scene of dialogue',need:3.4,gain:0.6,assets:'Your character notes, voice samples, and the passages you love and hate.'},
+{n:'Landing page',need:3.5,gain:0.9,assets:'Final copy, brand colors and fonts, images, and a reference page you admire.'},
+{n:'Business forecast',need:3.6,gain:0.8,assets:'Your real numbers, stated assumptions, and a template for the output.'},
+{n:'Dashboard',need:3.6,gain:0.8,assets:'A cleaned data file, the questions it must answer, and a sketch of the layout.'},
+{n:'Analyze a loyalty point economy',need:4.0,gain:0.8,assets:'Earn and burn rules, sample transaction data, and the questions you need answered.'},
+{n:'Interactive 3D or VR scene',need:4.9,gain:0.5,assets:'Textures, models, and reference images. Spatial layout may still need a stronger model.'}];
+var rungs=[
+{n:'One-shot prompt',min:0,boost:0,d:'Type the request once and take what comes back.'},
+{n:'Detailed brief',min:10,boost:0.4,d:'Say who it is for, the goal, the limits, and what good looks like.'},
+{n:'Add examples',min:25,boost:0.75,d:'Show one result you want and one you do not.'},
+{n:'Add assets',min:45,boost:1.05,d:''},
+{n:'Plan, steps, review',min:90,boost:1.3,d:'Have a model write the brief for you, save it as a plan file or skill, work in steps, then review the result against the plan.'}];
+var names=['Falls short','Borderline','Good fit','Overkill'];
+var state={task:2,rung:0};
+var taskSel=document.getElementById('task');
+var ladder=document.getElementById('ladder');
+var grid=document.getElementById('grid');
+var marker=document.getElementById('marker');
+var board=document.getElementById('board');
+var rungBtns=[],cells=[];
+
+tasks.forEach(function(t,i){var o=document.createElement('option');o.value=i;o.textContent=t.n;taskSel.appendChild(o);});
+taskSel.value=state.task;
+
+rungs.forEach(function(r,k){
+  var li=document.createElement('li');
+  var b=document.createElement('button');
+  b.className='rung';b.type='button';
+  b.innerHTML='<span class="node"></span><span>'+r.n+'</span>';
+  b.onclick=function(){state.rung=k;render();};
+  li.appendChild(b);ladder.appendChild(li);rungBtns.push(b);
+});
+
+grid.appendChild(document.createElement('div'));
+efforts.forEach(function(e){var h=document.createElement('div');h.className='colhead';h.textContent=e.n;grid.appendChild(h);});
+models.forEach(function(m,i){
+  var lab=document.createElement('div');lab.className='rowhead';lab.textContent=m.n;grid.appendChild(lab);
+  cells[i]=[];
+  efforts.forEach(function(e,j){var c=document.createElement('div');grid.appendChild(c);cells[i][j]=c;});
+});
+
+function status(d){return d<-0.8?0:d<0?1:d<=1.1?2:3;}
+function diffFor(m,e,t,r){return m.p+e.b+rungs[r].boost*t.gain-t.need;}
+function best(t,r){
+  var b=null,bc=1e9;
+  models.forEach(function(m,i){efforts.forEach(function(e,j){
+    if(diffFor(m,e,t,r)>=0){var c=m.c*e.m;if(c<bc){bc=c;b=[i,j,c];}}
+  });});
+  return b;
+}
+function label(b){return models[b[0]].n+', '+efforts[b[1]].n.toLowerCase()+' effort';}
+
+function placeMarker(cur){
+  if(!cur){marker.style.opacity='0';return;}
+  var c=cells[cur[0]][cur[1]];
+  var br=board.getBoundingClientRect(),cr=c.getBoundingClientRect();
+  marker.style.opacity='1';
+  marker.style.width=(cr.width+8)+'px';
+  marker.style.height=(cr.height+8)+'px';
+  marker.style.transform='translate('+Math.round(cr.left-br.left-4)+'px,'+Math.round(cr.top-br.top-4)+'px)';
+}
+
+function render(){
+  var t=tasks[+taskSel.value];
+  state.task=+taskSel.value;
+  rungBtns.forEach(function(b,k){
+    b.className='rung'+(k<state.rung?' done':'')+(k===state.rung?' now':'');
+    b.setAttribute('aria-pressed',k===state.rung?'true':'false');
+  });
+  var cur=best(t,state.rung),base=best(t,0);
+  models.forEach(function(m,i){efforts.forEach(function(e,j){
+    var s=status(diffFor(m,e,t,state.rung));
+    var c=cells[i][j];
+    c.className='cell s'+s;
+    c.innerHTML='<span class="lab">'+names[s]+'</span>';
+    c.setAttribute('aria-label',m.n+', '+e.n.toLowerCase()+' effort: '+names[s].toLowerCase());
+  });});
+  var r=rungs[state.rung];
+  var txt=state.rung===3?t.assets:r.d;
+  var note='<strong>'+r.n+'</strong>'+txt;
+  if(t.gain<0.7&&state.rung>0){note+='<span class="heads">Preparation helps less on this kind of task, so expect a smaller shift.</span>';}
+  document.getElementById('rungNote').innerHTML=note;
+  var story;
+  if(!cur){story='Nothing here is a good fit yet. Climb the ladder or move up a model.';}
+  else if(state.rung===0){story='Typed once, the cheapest good fit is '+label(cur)+'.';}
+  else if(!base){story='Typed once, nothing here is a good fit. With this preparation, '+label(cur)+' works.';}
+  else if(cur[2]>=base[2]){story='Preparation does not change the cheapest fit for this task, so the stronger model stays worth it.';}
+  else{story='Preparation moves the cheapest good fit from '+label(base)+' to '+label(cur)+'. That is about '+Math.round((1-cur[2]/base[2])*100)+'% less model spend for roughly '+r.min+' minutes of your time.';}
+  document.getElementById('story').textContent=story;
+  document.getElementById('fitOut').textContent=cur?label(cur):'None yet';
+  document.getElementById('timeOut').textContent=r.min===0?'None':'About '+r.min+' minutes';
+  var bars=document.getElementById('bars');
+  if(!cur){bars.textContent='No good fit yet';}
+  else{
+    var top=Math.max(cur[2],base?base[2]:0);
+    var html='';
+    if(base){html+='<div class="barrow"><span>Typed once</span><div class="track"><div class="fill" style="width:'+Math.round(base[2]/top*100)+'%"></div></div></div>';}
+    html+='<div class="barrow"><span>'+(state.rung===0?'Typed once':'With preparation')+'</span><div class="track"><div class="fill now" style="width:'+Math.round(cur[2]/top*100)+'%"></div></div></div>';
+    if(state.rung===0&&base){html='<div class="barrow"><span>Typed once</span><div class="track"><div class="fill now" style="width:100%"></div></div></div>';}
+    bars.innerHTML=html;
+  }
+  placeMarker(cur);
+}
+
+taskSel.onchange=render;
+window.addEventListener('resize',function(){placeMarker(best(tasks[state.task],state.rung));});
+render();
+if(document.fonts&&document.fonts.ready){document.fonts.ready.then(function(){placeMarker(best(tasks[state.task],state.rung));});}
+</script>
+</body>
+</html>

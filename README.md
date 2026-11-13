@@ -1,7 +1,8 @@
-# Claude models and effort: two separate dials
+# Claude models and effort
 
-An interactive grid that shows how model tier (Haiku, Sonnet, Opus, Fable) and effort level (low to max) combine for tasks of different difficulty.
+Two small interactive pages about how model tier (Haiku, Sonnet, Opus, Fable), effort level (low to max), and your own preparation trade off.
 
-Open `index.html` in a browser, or use the live page once GitHub Pages is on.
+- `index.html`: the model and effort grid. Pick a task difficulty and see which combinations fit.
+- `better-prep.html`: the preparation ladder. Pick a work task, climb the ladder, and watch the cheapest good fit change.
 
-This is an illustration of the concept, not benchmark data. The spend numbers are a rough relative scale.
+Both pages are illustrations of the concept, not benchmark data. Spend and time numbers are rough, relative guesses.
